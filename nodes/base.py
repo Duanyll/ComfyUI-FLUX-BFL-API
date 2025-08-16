@@ -6,7 +6,6 @@ import torch
 import os
 import time
 from .status import Status
-from .config import config_loader
 
 class BaseFlux:
     RETURN_TYPES = ("IMAGE",)
@@ -44,9 +43,9 @@ class BaseFlux:
         if width % 32 != 0 or height % 32 != 0:
             raise ValueError(f"Width {width} and height {height} must be multiples of 32.")
 
-    def post_request(self, url_path, arguments):
-        post_url = config_loader.create_url(url_path)
-        headers = {"x-key": os.environ["X_KEY"]}
+    def post_request(self, url_path, arguments, config):
+        post_url = config.create_url(url_path)
+        headers = {"x-key": config.get_x_key(), "Authorization": f"Bearer {config.get_x_key()}"}
         response = requests.post(post_url, json=arguments, headers=headers)
         
         if response.status_code == 200:
@@ -55,9 +54,9 @@ class BaseFlux:
             print(f"Error initiating request: {response.status_code}, {response.text}")
             return None
 
-    def get_result(self, task_id, output_format="jpeg", max_attempts=20):
-        headers = {"x-key": os.environ["X_KEY"]}
-        get_url = config_loader.create_url(f"get_result?id={task_id}")
+    def get_result(self, task_id, config, output_format="jpeg", max_attempts=20):
+        headers = {"x-key": config.get_x_key(), "Authorization": f"Bearer {config.get_x_key()}"}
+        get_url = config.create_url(f"get_result?id={task_id}")
         attempt = 1
         
         while attempt <= max_attempts:
@@ -104,15 +103,15 @@ class BaseFlux:
         print(f"All attempts exhausted for task_id {task_id}. Returning blank image.")
         return self.create_blank_image()
 
-    def generate_image(self, url_path, arguments):
+    def generate_image(self, url_path, arguments, config):
         if "width" in arguments and "height" in arguments:
             self.check_multiple_of_32(arguments["width"], arguments["height"])
 
         try:
-            task_id = self.post_request(url_path, arguments)
+            task_id = self.post_request(url_path, arguments, config)
             if task_id:
                 print(f"Task ID '{task_id}'")
-                return self.get_result(task_id, output_format=arguments.get("output_format", "jpeg"))
+                return self.get_result(task_id, config, output_format=arguments.get("output_format", "jpeg"))
             return self.create_blank_image()
         except Exception as e:
             print(f"Error generating image: {str(e)}")

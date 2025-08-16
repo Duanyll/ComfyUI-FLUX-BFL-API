@@ -9,7 +9,6 @@ class ConfigLoader:
         config_path = os.path.join(parent_dir, "config.ini")
         self.config = configparser.ConfigParser()
         self.config.read(config_path)
-        self.set_x_key()
         
         # Regional endpoints for finetuning (required by BFL API)
         self.regional_endpoints = {
@@ -47,13 +46,39 @@ class ConfigLoader:
         if region not in self.regional_endpoints:
             raise ValueError(f"Invalid region '{region}'. Must be one of: {list(self.regional_endpoints.keys())}")
         return self.regional_endpoints[region]
-
-    def set_x_key(self):
-        try:
-            x_key = self.get_key('API', 'X_KEY')
-            os.environ["X_KEY"] = x_key
-        except KeyError as e:
-            print(f"Error: {str(e)}")
+            
+    def get_x_key(self):
+        return self.get_key('API', 'X_KEY')
 
 # Create a singleton instance to be shared across modules
 config_loader = ConfigLoader() 
+
+
+class CreateBFLConfig:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "base_url": ("STRING", {"default": "https://api.bfl.ml/v1/"}),
+                "x_key": ("STRING", {"default": "your-key"})
+            }
+        }
+        
+    FUNCTION = "create_bfl_config"
+    RETURN_TYPES = ("BFL_CONFIG",)
+    CATEGORY = "BFL"
+    
+    def create_bfl_config(self, base_url, x_key):
+        config = ConfigLoader()
+        config.config['API']['BASE_URL'] = base_url
+        config.config['API']['X_KEY'] = x_key
+        return (config, )
+    
+
+NODE_CLASS_MAPPINGS = {
+    "CreateBFLConfig_BFL": CreateBFLConfig
+}
+
+NODE_DISPLAY_NAME_MAPPINGS = {
+    "CreateBFLConfig_BFL": "Create BFL Config"
+}

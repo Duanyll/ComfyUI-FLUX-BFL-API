@@ -3,7 +3,7 @@ import os
 import json
 import base64
 from .base import BaseFinetuneFlux
-from .config import config_loader
+from .config import ConfigLoader
 
 class FluxFinetune:
     RETURN_TYPES = ("STRING",)
@@ -28,12 +28,16 @@ class FluxFinetune:
             },
             "optional": {
                 "webhook_url": ("STRING", {"default": ""}),
-                "webhook_secret": ("STRING", {"default": ""})
+                "webhook_secret": ("STRING", {"default": ""}),
+                "config": ("BFL_CONFIG",)
             }
         }
 
     def create_finetune(self, zip_file_path, finetune_comment, trigger_word, mode, region, iterations, learning_rate, 
-                       captioning, priority, finetune_type, lora_rank, webhook_url="", webhook_secret=""):
+                       captioning, priority, finetune_type, lora_rank, webhook_url="", webhook_secret="", config=None):
+        
+        if config is None:
+            config = ConfigLoader()
         
         # Auto-adjust learning rate based on finetune_type if using default
         if learning_rate == 0.00001:  # Default value
@@ -73,8 +77,8 @@ class FluxFinetune:
             arguments["webhook_secret"] = webhook_secret
 
         try:
-            post_url = config_loader.create_url("finetune", region=region)
-            headers = {"x-key": os.environ["X_KEY"]}
+            post_url = config.create_url("finetune", region=region)
+            headers = {"x-key": config.get_x_key(), "Authorization": f"Bearer {config.get_x_key()}"}
             response = requests.post(post_url, json=arguments, headers=headers)
             
             if response.status_code == 200:
@@ -107,18 +111,24 @@ class FluxFinetuneStatus:
             "required": {
                 "finetune_id": ("STRING", {"default": ""}),
                 "region": (["us", "eu"], {"default": "us"})
+            },
+            "optional": {
+                "config": ("BFL_CONFIG",)
             }
         }
 
-    def check_finetune_status(self, finetune_id, region):
+    def check_finetune_status(self, finetune_id, region, config=None):
+        if config is None:
+            config = ConfigLoader()
+            
         if not finetune_id or not finetune_id.strip():
             error_response = {"error": "No finetune ID provided"}
             return (json.dumps(error_response, indent=2),)
             
         try:
-            polling_url = config_loader.create_url("get_result", region=region)
+            polling_url = config.create_url("get_result", region=region)
             
-            headers = {"x-key": os.environ["X_KEY"]}
+            headers = {"x-key": config.get_x_key(), "Authorization": f"Bearer {config.get_x_key()}"}
             params = {"id": finetune_id.strip()}
             
             print(f"🔍 Checking finetune status for ID: {finetune_id}")
@@ -166,14 +176,20 @@ class FluxMyFinetunes:
         return {
             "required": {
                 "region": (["us", "eu"], {"default": "us"})
+            },
+            "optional": {
+                "config": ("BFL_CONFIG",)
             }
         }
 
-    def get_my_finetunes(self, region):
-        try:
-            my_finetunes_url = config_loader.create_url("my_finetunes", region=region)
+    def get_my_finetunes(self, region, config=None):
+        if config is None:
+            config = ConfigLoader()
             
-            headers = {"x-key": os.environ["X_KEY"]}
+        try:
+            my_finetunes_url = config.create_url("my_finetunes", region=region)
+            
+            headers = {"x-key": config.get_x_key(), "Authorization": f"Bearer {config.get_x_key()}"}
             
             print(f"📋 Getting my finetunes from region: {region}")
             print(f"📡 Using endpoint: {my_finetunes_url}")
@@ -207,17 +223,23 @@ class FluxFinetuneDetails:
             "required": {
                 "finetune_id": ("STRING", {"default": ""}),
                 "region": (["us", "eu"], {"default": "us"})
+            },
+            "optional": {
+                "config": ("BFL_CONFIG",)
             }
         }
 
-    def get_finetune_details(self, finetune_id, region):
+    def get_finetune_details(self, finetune_id, region, config=None):
+        if config is None:
+            config = ConfigLoader()
+            
         if not finetune_id or not finetune_id.strip():
             return ("Error: Finetune ID is required",)
             
         try:
-            details_url = config_loader.create_url("finetune_details", region=region)
+            details_url = config.create_url("finetune_details", region=region)
             
-            headers = {"x-key": os.environ["X_KEY"]}
+            headers = {"x-key": config.get_x_key(), "Authorization": f"Bearer {config.get_x_key()}"}
             params = {"finetune_id": finetune_id.strip()}
             
             print(f"📋 Getting finetune details for ID: {finetune_id}")
@@ -252,18 +274,24 @@ class FluxDeleteFinetune:
             "required": {
                 "finetune_id": ("STRING", {"default": ""}),
                 "region": (["us", "eu"], {"default": "us"})
+            },
+            "optional": {
+                "config": ("BFL_CONFIG",)
             }
         }
 
-    def delete_finetune(self, finetune_id, region):
+    def delete_finetune(self, finetune_id, region, config=None):
+        if config is None:
+            config = ConfigLoader()
+            
         if not finetune_id or not finetune_id.strip():
             return ("Error: Finetune ID is required",)
             
         try:
-            delete_url = config_loader.create_url("delete_finetune", region=region)
+            delete_url = config.create_url("delete_finetune", region=region)
             
             headers = {
-                "x-key": os.environ["X_KEY"],
+                "x-key": config.get_x_key(),
                 "Content-Type": "application/json"
             }
             payload = {"finetune_id": finetune_id.strip()}
@@ -310,13 +338,16 @@ class FluxProFinetune(BaseFinetuneFlux):
                 "image_prompt": ("STRING", {"default": ""}),
                 "seed": ("INT", {"default": -1}),
                 "webhook_url": ("STRING", {"default": ""}),
-                "webhook_secret": ("STRING", {"default": ""})
+                "webhook_secret": ("STRING", {"default": ""}),
+                "config": ("BFL_CONFIG", )
             }
         }
 
     def generate_image(self, finetune_id, region, prompt, finetune_strength, steps, guidance, width, height, 
                       prompt_upsampling, safety_tolerance, output_format, image_prompt="", seed=-1, 
-                      webhook_url="", webhook_secret=""):
+                      webhook_url="", webhook_secret="", config=None):
+        if config is None:
+            config = ConfigLoader()
         arguments = {
             "finetune_id": finetune_id,
             "prompt": prompt,
@@ -339,21 +370,23 @@ class FluxProFinetune(BaseFinetuneFlux):
         if webhook_secret:
             arguments["webhook_secret"] = webhook_secret
             
-        return self.generate_regional_image("flux-pro-finetuned", arguments, region)
+        return self.generate_regional_image("flux-pro-finetuned", arguments, region, config)
     
-    def generate_regional_image(self, endpoint, arguments, region):
+    def generate_regional_image(self, endpoint, arguments, region, config=None):
         if "width" in arguments and "height" in arguments:
             self.check_multiple_of_32(arguments["width"], arguments["height"])
 
         try:
-            post_url = config_loader.create_url(endpoint, region=region)
-            headers = {"x-key": os.environ["X_KEY"]}
+            if config is None:
+                config = ConfigLoader()
+            post_url = config.create_url(endpoint, region=region)
+            headers = {"x-key": config.get_x_key(), "Authorization": f"Bearer {config.get_x_key()}"}
             response = requests.post(post_url, json=arguments, headers=headers)
             
             if response.status_code == 200:
                 task_id = response.json().get("id")
                 if task_id:
-                    regional_endpoint = config_loader.get_regional_endpoint(region)
+                    regional_endpoint = config.get_regional_endpoint(region)
                     print(f"Finetune Task ID '{task_id}' (Region: {region.upper()} - {regional_endpoint})")
                     return self.get_result(task_id, output_format=arguments.get("output_format", "jpeg"))
             else:
@@ -381,12 +414,15 @@ class FluxProDepthFinetune(BaseFinetuneFlux):
             "optional": {
                 "seed": ("INT", {"default": -1}),
                 "webhook_url": ("STRING", {"default": ""}),
-                "webhook_secret": ("STRING", {"default": ""})
+                "webhook_secret": ("STRING", {"default": ""}),
+                "config": ("BFL_CONFIG", )
             }
         }
 
     def generate_image(self, finetune_id, prompt, control_image, finetune_strength, prompt_upsampling, 
-                      steps, output_format, guidance, safety_tolerance, seed=-1, webhook_url="", webhook_secret=""):
+                      steps, output_format, guidance, safety_tolerance, seed=-1, webhook_url="", webhook_secret="", config=None):
+        if config is None:
+            config = ConfigLoader()
         arguments = {
             "finetune_id": finetune_id,
             "prompt": prompt,
@@ -406,7 +442,7 @@ class FluxProDepthFinetune(BaseFinetuneFlux):
         if webhook_secret:
             arguments["webhook_secret"] = webhook_secret
             
-        return super().generate_image("flux-pro-1.0-depth-finetuned", arguments)
+        return super().generate_image("flux-pro-1.0-depth-finetuned", arguments, config)
 
 class FluxProCannyFinetune(BaseFinetuneFlux):
     @classmethod
@@ -428,13 +464,16 @@ class FluxProCannyFinetune(BaseFinetuneFlux):
             "optional": {
                 "seed": ("INT", {"default": -1}),
                 "webhook_url": ("STRING", {"default": ""}),
-                "webhook_secret": ("STRING", {"default": ""})
+                "webhook_secret": ("STRING", {"default": ""}),
+                "config": ("BFL_CONFIG", )
             }
         }
 
     def generate_image(self, finetune_id, prompt, control_image, finetune_strength, canny_low_threshold, 
                       canny_high_threshold, prompt_upsampling, steps, output_format, guidance, safety_tolerance, 
-                      seed=-1, webhook_url="", webhook_secret=""):
+                      seed=-1, webhook_url="", webhook_secret="", config=None):
+        if config is None:
+            config = ConfigLoader()
         arguments = {
             "finetune_id": finetune_id,
             "prompt": prompt,
@@ -456,7 +495,7 @@ class FluxProCannyFinetune(BaseFinetuneFlux):
         if webhook_secret:
             arguments["webhook_secret"] = webhook_secret
             
-        return super().generate_image("flux-pro-1.0-canny-finetuned", arguments)
+        return super().generate_image("flux-pro-1.0-canny-finetuned", arguments, config)
 
 class FluxProFillFinetune(BaseFinetuneFlux):
     @classmethod
@@ -477,12 +516,15 @@ class FluxProFillFinetune(BaseFinetuneFlux):
                 "prompt": ("STRING", {"default": "", "multiline": True}),
                 "seed": ("INT", {"default": -1}),
                 "webhook_url": ("STRING", {"default": ""}),
-                "webhook_secret": ("STRING", {"default": ""})
+                "webhook_secret": ("STRING", {"default": ""}),
+                "config": ("BFL_CONFIG", )
             }
         }
 
     def generate_image(self, finetune_id, image, finetune_strength, steps, prompt_upsampling, guidance, 
-                      safety_tolerance, output_format, mask="", prompt="", seed=-1, webhook_url="", webhook_secret=""):
+                      safety_tolerance, output_format, mask="", prompt="", seed=-1, webhook_url="", webhook_secret="", config=None):
+        if config is None:
+            config = ConfigLoader()
         arguments = {
             "finetune_id": finetune_id,
             "image": image,
@@ -505,7 +547,7 @@ class FluxProFillFinetune(BaseFinetuneFlux):
         if webhook_secret:
             arguments["webhook_secret"] = webhook_secret
             
-        return super().generate_image("flux-pro-1.0-fill-finetuned", arguments)
+        return super().generate_image("flux-pro-1.0-fill-finetuned", arguments, config)
 
 class FluxPro11UltraFinetune(BaseFinetuneFlux):
     @classmethod
@@ -524,12 +566,15 @@ class FluxPro11UltraFinetune(BaseFinetuneFlux):
             "optional": {
                 "seed": ("INT", {"default": -1}),
                 "webhook_url": ("STRING", {"default": ""}),
-                "webhook_secret": ("STRING", {"default": ""})
+                "webhook_secret": ("STRING", {"default": ""}),
+                "config": ("BFL_CONFIG", )
             }
         }
 
     def generate_image(self, finetune_id, region, prompt, finetune_strength, aspect_ratio, safety_tolerance, 
-                      output_format, raw, seed=-1, webhook_url="", webhook_secret=""):
+                      output_format, raw, seed=-1, webhook_url="", webhook_secret="", config=None):
+        if config is None:
+            config = ConfigLoader()
         arguments = {
             "finetune_id": finetune_id,
             "prompt": prompt,
@@ -547,18 +592,20 @@ class FluxPro11UltraFinetune(BaseFinetuneFlux):
         if webhook_secret:
             arguments["webhook_secret"] = webhook_secret
             
-        return self.generate_regional_image("flux-pro-1.1-ultra-finetuned", arguments, region)
+        return self.generate_regional_image("flux-pro-1.1-ultra-finetuned", arguments, region, config)
     
-    def generate_regional_image(self, endpoint, arguments, region):
+    def generate_regional_image(self, endpoint, arguments, region, config=None):
         try:
-            post_url = config_loader.create_url(endpoint, region=region)
-            headers = {"x-key": os.environ["X_KEY"]}
+            if config is None:
+                config = config_loader
+            post_url = config.create_url(endpoint, region=region)
+            headers = {"x-key": config.get_x_key(), "Authorization": f"Bearer {config.get_x_key()}"}
             response = requests.post(post_url, json=arguments, headers=headers)
             
             if response.status_code == 200:
                 task_id = response.json().get("id")
                 if task_id:
-                    regional_endpoint = config_loader.get_regional_endpoint(region)
+                    regional_endpoint = config.get_regional_endpoint(region)
                     print(f"Finetune Task ID '{task_id}' (Region: {region.upper()} - {regional_endpoint})")
                     return self.get_result(task_id, output_format=arguments.get("output_format", "jpeg"))
             else:
@@ -592,4 +639,4 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "FluxProCannyFinetune_BFL": "Flux Pro Canny Finetune (BFL)",
     "FluxProFillFinetune_BFL": "Flux Pro Fill Finetune (BFL)",
     "FluxPro11UltraFinetune_BFL": "Flux Pro 1.1 Ultra Finetune (BFL)"
-} 
+}
