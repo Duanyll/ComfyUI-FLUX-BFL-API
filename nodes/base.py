@@ -45,7 +45,7 @@ class BaseFlux:
 
     def post_request(self, url_path, arguments, config):
         post_url = config.create_url(url_path)
-        headers = {"x-key": config.get_x_key(), "Authorization": f"Bearer {config.get_x_key()}"}
+        headers = config.make_headers()
         response = requests.post(post_url, json=arguments, headers=headers)
         
         if response.status_code == 200:
@@ -55,7 +55,7 @@ class BaseFlux:
             return None
 
     def get_result(self, task_id, config, output_format="jpeg", max_attempts=20):
-        headers = {"x-key": config.get_x_key(), "Authorization": f"Bearer {config.get_x_key()}"}
+        headers = config.make_headers()
         get_url = config.create_url(f"get_result?id={task_id}")
         attempt = 1
         

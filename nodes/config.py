@@ -49,6 +49,9 @@ class ConfigLoader:
             
     def get_x_key(self):
         return self.get_key('API', 'X_KEY')
+    
+    def make_headers(self):
+        return {"x-key": self.get_x_key(), "Authorization": f"Bearer {self.get_x_key()}"}
 
 # Create a singleton instance to be shared across modules
 config_loader = ConfigLoader() 

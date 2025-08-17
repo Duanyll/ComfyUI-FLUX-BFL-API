@@ -78,7 +78,7 @@ class FluxFinetune:
 
         try:
             post_url = config.create_url("finetune", region=region)
-            headers = {"x-key": config.get_x_key(), "Authorization": f"Bearer {config.get_x_key()}"}
+            headers = config.make_headers()
             response = requests.post(post_url, json=arguments, headers=headers)
             
             if response.status_code == 200:
@@ -128,7 +128,7 @@ class FluxFinetuneStatus:
         try:
             polling_url = config.create_url("get_result", region=region)
             
-            headers = {"x-key": config.get_x_key(), "Authorization": f"Bearer {config.get_x_key()}"}
+            headers = config.make_headers()
             params = {"id": finetune_id.strip()}
             
             print(f"🔍 Checking finetune status for ID: {finetune_id}")
@@ -189,7 +189,7 @@ class FluxMyFinetunes:
         try:
             my_finetunes_url = config.create_url("my_finetunes", region=region)
             
-            headers = {"x-key": config.get_x_key(), "Authorization": f"Bearer {config.get_x_key()}"}
+            headers = config.make_headers()
             
             print(f"📋 Getting my finetunes from region: {region}")
             print(f"📡 Using endpoint: {my_finetunes_url}")
@@ -239,7 +239,7 @@ class FluxFinetuneDetails:
         try:
             details_url = config.create_url("finetune_details", region=region)
             
-            headers = {"x-key": config.get_x_key(), "Authorization": f"Bearer {config.get_x_key()}"}
+            headers = config.make_headers()
             params = {"finetune_id": finetune_id.strip()}
             
             print(f"📋 Getting finetune details for ID: {finetune_id}")
@@ -380,7 +380,7 @@ class FluxProFinetune(BaseFinetuneFlux):
             if config is None:
                 config = ConfigLoader()
             post_url = config.create_url(endpoint, region=region)
-            headers = {"x-key": config.get_x_key(), "Authorization": f"Bearer {config.get_x_key()}"}
+            headers = config.make_headers()
             response = requests.post(post_url, json=arguments, headers=headers)
             
             if response.status_code == 200:
@@ -599,7 +599,7 @@ class FluxPro11UltraFinetune(BaseFinetuneFlux):
             if config is None:
                 config = config_loader
             post_url = config.create_url(endpoint, region=region)
-            headers = {"x-key": config.get_x_key(), "Authorization": f"Bearer {config.get_x_key()}"}
+            headers = config.make_headers()
             response = requests.post(post_url, json=arguments, headers=headers)
             
             if response.status_code == 200:
