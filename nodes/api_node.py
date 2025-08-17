@@ -378,7 +378,7 @@ class FluxKontextPro(BaseFlux):
             "required": {
                 "prompt": ("STRING", {"default": "", "multiline": True}),
                 "input_image": ("STRING", {"default": None}),
-                "aspect_ratio": (["16:9", "4:3", "1:1", "3:2", "21:9", "9:16", "3:4", "2:3", "9:21"], {"default": "16:9"}),
+                "aspect_ratio": (["16:9", "4:3", "1:1", "3:2", "21:9", "9:16", "3:4", "2:3", "9:21", "auto"], {"default": "16:9"}),
                 "prompt_upsampling": ("BOOLEAN", {"default": False}),
                 "safety_tolerance": ("INT", {"default": 2, "min": 1, "max": 6}),
                 "output_format": (["jpeg", "png"], {"default": "jpeg"})
@@ -395,7 +395,7 @@ class FluxKontextPro(BaseFlux):
         arguments = {
             "prompt": prompt,
             "input_image": input_image,
-            "aspect_ratio": aspect_ratio,
+            "aspect_ratio": aspect_ratio if aspect_ratio != "auto" else None,
             "prompt_upsampling": prompt_upsampling,
             "safety_tolerance": safety_tolerance,
             "output_format": output_format
@@ -411,7 +411,7 @@ class FluxKontextMax(BaseFlux):
             "required": {
                 "prompt": ("STRING", {"default": "", "multiline": True}),
                 "input_image": ("STRING", {"default": None}),
-                "aspect_ratio": (["16:9", "4:3", "1:1", "3:2", "21:9", "9:16", "3:4", "2:3", "9:21"], {"default": "16:9"}),
+                "aspect_ratio": (["16:9", "4:3", "1:1", "3:2", "21:9", "9:16", "3:4", "2:3", "9:21", "auto"], {"default": "16:9"}),
                 "prompt_upsampling": ("BOOLEAN", {"default": False}),
                 "safety_tolerance": ("INT", {"default": 2, "min": 1, "max": 6}),
                 "output_format": (["jpeg", "png"], {"default": "jpeg"})
@@ -428,7 +428,7 @@ class FluxKontextMax(BaseFlux):
         arguments = {
             "prompt": prompt,
             "input_image": input_image,
-            "aspect_ratio": aspect_ratio,
+            "aspect_ratio": aspect_ratio if aspect_ratio != "auto" else None,
             "prompt_upsampling": prompt_upsampling,
             "safety_tolerance": safety_tolerance,
             "output_format": output_format
